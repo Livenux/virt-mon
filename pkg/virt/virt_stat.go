@@ -1,30 +1,33 @@
 package virt
 
-import "libvirt.org/go/libvirt"
+import (
+	"fmt"
+	"libvirt.org/go/libvirt"
+)
 
 type DomainStat struct {
-	Name     string
-	MaxMem   uint64
-	Memory   uint64
-	VCpu     uint
-	CpuUsage uint64
+	Name        string
+	Memory      uint64
+	MemoryUsage uint64
+	VCpu        uint
+	CpuUsage    uint64
 }
 
 func AllDomainStat(conn *libvirt.Connect) ([]*DomainStat, error) {
 	doms, err := conn.ListAllDomains(libvirt.CONNECT_LIST_DOMAINS_ACTIVE)
-	stats := []*DomainStat{}
+	var stats []*DomainStat
 
 	if err == nil {
 		for _, dom := range doms {
-			stat, err := CollectDomainStat(&dom)
-			if err == nil {
+			stat, dErr := CollectDomainStat(&dom)
+			if dErr == nil {
 				stats = append(stats, stat)
+			} else {
+				fmt.Println(dErr)
 			}
 		}
-		return stats, err
 	}
-	return nil, err
-
+	return stats, err
 }
 
 func CollectDomainStat(dom *libvirt.Domain) (*DomainStat, error) {
@@ -38,11 +41,11 @@ func CollectDomainStat(dom *libvirt.Domain) (*DomainStat, error) {
 	}
 
 	stat := DomainStat{
-		Name:     name,
-		MaxMem:   info.MaxMem,
-		Memory:   info.Memory,
-		VCpu:     info.NrVirtCpu,
-		CpuUsage: info.CpuTime / 1e9,
+		Name:        name,
+		Memory:      info.MaxMem,
+		MemoryUsage: info.Memory,
+		VCpu:        info.NrVirtCpu,
+		CpuUsage:    info.CpuTime / 1e9,
 	}
 
 	return &stat, nil
